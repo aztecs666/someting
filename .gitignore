@@ -10,3 +10,5 @@ app/route_forecaster_metrics.json
 
 data/*.db
 real data/*.db
+all_programs.txt
+temp_output.txt
