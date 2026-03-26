@@ -1,0 +1,108 @@
+Project change log
+Date: 2026-03-16
+
+Purpose
+- Record the concrete changes made to convert the project into a real-data-only route planning forecaster.
+- Document the current model behavior and verified evaluation state.
+
+Main project framing changes
+- Removed any planner-training fallback that depended on synthetic or fabricated commercial targets.
+- Kept the project honest about the data limitation: no private quote history is present.
+- Positioned the planner to train from:
+  - real quote history when available
+  - real external benchmark history in `market_rate_history` when quotes are unavailable
+- Labeled the old stream/dashboard path as a legacy sandbox, not evidence for the real-data planner.
+
+Training and modeling changes
+- Reworked the route forecaster from an absolute-price model to a residual-blend model.
+- New strategy:
+  - start from the latest observed real benchmark cost
+  - predict the residual adjustment from that baseline
+  - blend the adjustment back into the baseline to reduce overreaction
+- Added route-specific interval calibration using a time-based calibration slice instead of relying on narrow quantile outputs from the earlier model.
+- Ensured training, evaluation, and future forecast generation use the same prediction path.
+
+Real-data constraints enforced
+- No synthetic planner training data is used.
+- If `quote_history` is empty, the planner uses real external benchmark history from `market_rate_history`.
+- If both `quote_history` and `market_rate_history` are empty, training should refuse.
+
+Files changed
+- `app/forecast_support.py`
+  - added baseline/residual prediction helpers
+  - added residual-blend prediction strategy
+  - added interval-width calibration by route
+  - updated training metrics to compare against naive benchmark baseline
+- `app/forecast_routes.py`
+  - switched forecast generation to the shared prediction path
+- `ml/evaluate_route_forecaster.py`
+  - switched evaluation to the shared prediction path
+  - added recent validated 30/60/90 day windows
+  - added recent per-route metrics
+  - removed deprecated pandas fillna usage
+- `app/app.py`
+  - softened misleading UI claims
+  - marked old UI as legacy sandbox
+- `app/stream_engine.py`
+  - corrected route encoding mismatch
+  - removed random retrain split in favor of time-aware behavior
+- `utils/real_data_audit.py`
+  - added visibility into `market_rate_history`
+- `README.md`
+  - updated workflow and honesty rules
+  - documented real-data-only planner story
+  - documented evaluation command
+- Root wrapper scripts added or aligned:
+  - `build_forecast_dataset.py`
+  - `train_route_forecaster.py`
+  - `forecast_routes.py`
+  - `evaluate_route_forecaster.py`
+  - `sync_public_benchmarks.py`
+  - `real_data_audit.py`
+  - `compare_external_benchmark.py`
+  - `import_quotes.py`
+- Support files added:
+  - `requirements.txt`
+  - `.gitignore`
+
+Verified public-data sync state
+- Public benchmark source used by the project: Compass/Xeneta route benchmark history.
+- Latest synced benchmark date: 2026-03-13.
+- Synced real benchmark history rows in `market_rate_history`: 17780.
+
+Current trained planner
+- Model version: 20260316115358
+- Training mode: external_benchmark_history
+- Training source: Compass/Xeneta
+- Prediction strategy: residual_blend
+
+Verified evaluation results on real data
+- Holdout:
+  - MAE: 211.32
+  - RMSE: 414.23
+  - MAPE: 8.11%
+  - baseline MAE: 224.28
+  - baseline MAPE: 8.42%
+  - MAE improvement vs baseline: 5.78%
+  - interval coverage: 70.36%
+- Recent validated windows:
+  - last 30 days: MAE 135.56 vs baseline 138.15, MAPE 6.85% vs baseline 7.09%
+  - last 60 days: MAE 121.78 vs baseline 125.08, MAPE 6.96% vs baseline 7.08%
+  - last 90 days: MAE 116.59 vs baseline 119.55, MAPE 6.81% vs baseline 7.06%
+
+Current forecast output state
+- Forecasts generated for 2026-03-30 through 2026-04-05.
+- Rows saved for current model version: 56.
+- The database still contains older forecast rows for the previous model version on the same forecast date. Those were left in place as history.
+
+Important limitation that still remains
+- This is still not direct commercial quote prediction because there is no private quote history in the repository.
+- The planner is currently a real-data planning model trained on external benchmark history.
+- The latest forward forecast window cannot yet be truth-checked because actual public benchmark data only reaches 2026-03-13.
+
+Commands used for verification
+- `python sync_public_benchmarks.py`
+- `python train_route_forecaster.py`
+- `python evaluate_route_forecaster.py --sync-public`
+- `python forecast_routes.py`
+- `python real_data_audit.py`

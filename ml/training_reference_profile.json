@@ -1,0 +1,426 @@
+{
+  "feature_ranges": {
+    "year": {
+      "min": 2022.0,
+      "max": 2025.0,
+      "mean": 2023.0043200987452,
+      "median": 2023.0
+    },
+    "month": {
+      "min": 1.0,
+      "max": 12.0,
+      "mean": 6.518411849413701,
+      "median": 7.0
+    },
+    "quarter": {
+      "min": 1.0,
+      "max": 4.0,
+      "mean": 2.507097305081259,
+      "median": 3.0
+    },
+    "day_of_week": {
+      "min": 0.0,
+      "max": 6.0,
+      "mean": 2.999588562024275,
+      "median": 3.0
+    },
+    "is_weekend": {
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.2871837070561613,
+      "median": 0.0
+    },
+    "is_holiday_season": {
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.166426661180827,
+      "median": 0.0
+    },
+    "weather_severity_origin": {
+      "min": 0.02,
+      "max": 10.0,
+      "mean": 2.963445793046698,
+      "median": 2.5
+    },
+    "weather_severity_destination": {
+      "min": 0.03,
+      "max": 10.0,
+      "mean": 2.943231845299321,
+      "median": 2.48
+    },
+    "storm_probability": {
+      "min": 0.16,
+      "max": 74.72,
+      "mean": 19.810966879242955,
+      "median": 17.76
+    },
+    "temp_deviation_origin": {
+      "min": -18.04,
+      "max": 18.4,
+      "mean": -0.14179592676404038,
+      "median": -0.09
+    },
+    "temp_deviation_destination": {
+      "min": -18.7,
+      "max": 18.17,
+      "mean": -0.07622299938284305,
+      "median": -0.08
+    },
+    "wind_speed_origin": {
+      "min": 0.43,
+      "max": 34.03,
+      "mean": 8.938722485085373,
+      "median": 7.94
+    },
+    "wind_speed_destination": {
+      "min": 0.23,
+      "max": 38.96,
+      "mean": 9.072982925324009,
+      "median": 8.06
+    },
+    "visibility_nm": {
+      "min": 1.35,
+      "max": 20.0,
+      "mean": 9.890236576836042,
+      "median": 9.27
+    },
+    "wave_height": {
+      "min": 0.01,
+      "max": 7.41,
+      "mean": 1.6065171775354865,
+      "median": 1.36
+    },
+    "weather_delay_risk": {
+      "min": 0.0,
+      "max": 7.96,
+      "mean": 3.564182267023246,
+      "median": 3.53
+    },
+    "weather_delay_occurred": {
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.2978810944250154,
+      "median": 0.0
+    },
+    "port_congestion_origin": {
+      "min": 0.05,
+      "max": 10.0,
+      "mean": 3.5976280600699444,
+      "median": 3.21
+    },
+    "port_congestion_destination": {
+      "min": 0.08,
+      "max": 10.0,
+      "mean": 3.505636700267435,
+      "median": 3.13
+    },
+    "port_efficiency_origin": {
+      "min": 20.93,
+      "max": 99.78,
+      "mean": 78.09000411437975,
+      "median": 79.94
+    },
+    "port_efficiency_destination": {
+      "min": 20.68,
+      "max": 99.8,
+      "mean": 77.81102653774944,
+      "median": 79.75
+    },
+    "vessels_at_port_origin": {
+      "min": 4.0,
+      "max": 33.0,
+      "mean": 15.00246862785435,
+      "median": 15.0
+    },
+    "vessels_at_port_destination": {
+      "min": 4.0,
+      "max": 30.0,
+      "mean": 14.965027772063362,
+      "median": 15.0
+    },
+    "crane_availability": {
+      "min": 27.46,
+      "max": 99.79,
+      "mean": 80.21065212919153,
+      "median": 82.2
+    },
+    "labor_dispute_risk": {
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.05040115202633203,
+      "median": 0.0
+    },
+    "customs_complexity": {
+      "min": 0.32,
+      "max": 10.0,
+      "mean": 3.975795103888089,
+      "median": 3.67
+    },
+    "fuel_price_origin": {
+      "min": 300.0,
+      "max": 300.0,
+      "mean": 300.0,
+      "median": 300.0
+    },
+    "fuel_price_destination": {
+      "min": 241.02,
+      "max": 349.27,
+      "mean": 299.6912013988891,
+      "median": 299.65
+    },
+    "distance_nm": {
+      "min": 2234.0,
+      "max": 11778.0,
+      "mean": 6825.590413495165,
+      "median": 6716.0
+    },
+    "base_transit_time": {
+      "min": 5.0,
+      "max": 34.18,
+      "mean": 17.09028800658301,
+      "median": 16.97
+    },
+    "container_count": {
+      "min": 1.0,
+      "max": 5.0,
+      "mean": 2.0927792635260234,
+      "median": 2.0
+    },
+    "container_weight_teus": {
+      "min": 1.0,
+      "max": 2.25,
+      "mean": 1.7278852088047727,
+      "median": 2.0
+    },
+    "total_teus": {
+      "min": 1.0,
+      "max": 11.25,
+      "mean": 3.598642254680107,
+      "median": 2.25
+    },
+    "carrier_premium_factor": {
+      "min": 0.94,
+      "max": 1.15,
+      "mean": 1.0300144003291505,
+      "median": 1.05
+    },
+    "container_premium_factor": {
+      "min": 1.0,
+      "max": 4.5,
+      "mean": 1.9015634643077557,
+      "median": 1.8
+    },
+    "baf_factor": {
+      "min": 0.95,
+      "max": 0.95,
+      "mean": 0.9500000000000002,
+      "median": 0.95
+    },
+    "exchange_rate_index": {
+      "min": 0.84,
+      "max": 1.19,
+      "mean": 0.9993704998971407,
+      "median": 1.0
+    },
+    "insurance_rate": {
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0
+    },
+    "peak_season_surcharge": {
+      "min": 0.0,
+      "max": 499.48,
+      "mean": 57.771071795926765,
+      "median": 0.0
+    },
+    "port_charges_origin": {
+      "min": 129.48,
+      "max": 789.65,
+      "mean": 379.86388603168075,
+      "median": 360.29
+    },
+    "port_charges_destination": {
+      "min": 164.39,
+      "max": 927.35,
+      "mean": 460.75734416786673,
+      "median": 439.72
+    },
+    "demand_factor": {
+      "min": 0.9,
+      "max": 1.15,
+      "mean": 1.0257560172803952,
+      "median": 1.0
+    },
+    "operational_risk_score": {
+      "min": 0.93,
+      "max": 9.0,
+      "mean": 3.1576877185764247,
+      "median": 2.99
+    },
+    "market_index": {
+      "min": 654.57,
+      "max": 1347.91,
+      "mean": 1003.903764657478,
+      "median": 1009.08
+    },
+    "day": {
+      "min": 1.0,
+      "max": 31.0,
+      "mean": 15.74470273606254,
+      "median": 16.0
+    },
+    "hour": {
+      "min": 0.0,
+      "max": 23.0,
+      "mean": 11.481382431598437,
+      "median": 12.0
+    },
+    "port_efficiency_diff": {
+      "min": -69.09,
+      "max": 75.50999999999999,
+      "mean": 0.27897757663032297,
+      "median": 0.5200000000000102
+    },
+    "port_congestion_total": {
+      "min": 0.79,
+      "max": 20.0,
+      "mean": 7.103264760337379,
+      "median": 6.720000000000001
+    },
+    "weather_risk_total": {
+      "min": 0.24,
+      "max": 20.0,
+      "mean": 5.90667763834602,
+      "median": 5.43
+    },
+    "temp_diff": {
+      "min": -23.259999999999998,
+      "max": 28.299999999999997,
+      "mean": -0.06557292738119726,
+      "median": -0.030000000000000027
+    },
+    "wind_risk": {
+      "min": 0.99,
+      "max": 25.97,
+      "mean": 9.00585270520469,
+      "median": 8.57
+    },
+    "weight_per_container": {
+      "min": 1.0,
+      "max": 2.25,
+      "mean": 1.7278852088047727,
+      "median": 2.0
+    },
+    "teu_per_container": {
+      "min": 0.9999990000010001,
+      "max": 2.2499995500000898,
+      "mean": 1.727884100539178,
+      "median": 1.9999980000020001
+    },
+    "estimated_speed_nm_per_day": {
+      "min": 234.8186285162043,
+      "max": 861.9998276000345,
+      "mean": 406.65975679715734,
+      "median": 398.5456787710749
+    },
+    "congestion_pressure": {
+      "min": 0.00531260482433394,
+      "max": 0.17202072360600287,
+      "mean": 0.04628239026608366,
+      "median": 0.043157705060621256
+    },
+    "port_capacity_pressure": {
+      "min": 0.1413855772431269,
+      "max": 1.1012541724914602,
+      "mean": 0.38352565237229913,
+      "median": 0.3699421922550036
+    },
+    "weather_port_interaction": {
+      "min": 0.44856,
+      "max": 41.71365000000001,
+      "mean": 10.097578590824932,
+      "median": 9.16366
+    },
+    "is_peak_season": {
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.3279160666529521,
+      "median": 0.0
+    },
+    "quarter_demand": {
+      "min": 0.9,
+      "max": 4.6,
+      "mean": 2.5736268257560173,
+      "median": 2.7
+    },
+    "fuel_cost_diff": {
+      "min": -49.26999999999998,
+      "max": 58.97999999999999,
+      "mean": 0.30879860111088214,
+      "median": 0.35000000000002274
+    },
+    "fuel_cost_avg": {
+      "min": 270.51,
+      "max": 324.635,
+      "mean": 299.8456006994445,
+      "median": 299.825
+    },
+    "origin_crowding_index": {
+      "min": 0.04263483220384959,
+      "max": 0.6423982672866851,
+      "mean": 0.19197764200076395,
+      "median": 0.18466083731797567
+    },
+    "port_charge_total": {
+      "min": 405.47,
+      "max": 1573.13,
+      "mean": 840.6212301995474,
+      "median": 822.0699999999999
+    },
+    "compound_friction": {
+      "min": 0.2398,
+      "max": 93.4,
+      "mean": 13.952048405677843,
+      "median": 10.7456
+    }
+  },
+  "target_ranges": {
+    "total_supply_chain_cost": {
+      "min": 2476.16,
+      "max": 57500.0,
+      "mean": 15198.295819790164,
+      "median": 11886.6
+    },
+    "delay_days": {
+      "min": 0.0,
+      "max": 20.31,
+      "mean": 6.824540218062126,
+      "median": 6.47
+    },
+    "route_efficiency": {
+      "min": 89.28,
+      "max": 552.91,
+      "mean": 282.53413495165603,
+      "median": 287.36
+    },
+    "port_efficiency_combined": {
+      "min": 39.86,
+      "max": 98.47,
+      "mean": 77.95046286772269,
+      "median": 78.84
+    },
+    "cost_per_teu": {
+      "min": 1773.08,
+      "max": 8803.65,
+      "mean": 4284.12135363094,
+      "median": 4203.49
+    },
+    "total_risk_score": {
+      "min": 0.9,
+      "max": 6.44,
+      "mean": 3.3609298498251388,
+      "median": 3.3
+    }
+  }
+}

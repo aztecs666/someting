@@ -1,0 +1,46 @@
+============================================================
+  BENCHMARK FORECASTING MODEL — TRAINING
+============================================================
+
+=== Building Training Data ===
+[OK] Built training dataset: 7888 samples (REAL data)
+Training samples: 6310 (earlier dates)
+Test samples:     1578 (later dates)
+Split at:         2025-01-13
+
+=== Naive Baseline (predict price stays the same) ===
+Baseline MAE:  $0.04
+Baseline RMSE: $0.05
+Baseline R2:   -0.0001
+
+=== Training XGBoost Model ===
+
+=== Model Performance (% Change Target) ===
+Train MAE:  3.34%
+Test MAE:   3.56%
+Test RMSE:  4.48%
+Test R2:    0.1117
+
+=== Dollar Equivalent ===
+Model Dollar MAE:    $77.06
+Naive Dollar MAE:    $81.84
+Directional Accuracy: 62.3% (of non-trivial moves)
+
+=== Model vs Naive Baseline ===
+[+] Model beats baseline by 5.2% (MAE reduction)
+  Baseline MAE: 3.76% -> Model MAE: 3.56%
+
+=== Feature Importance (top 10) ===
+  price_momentum            0.2200 ###########
+  route_historical_premium  0.1202 ######
+  price_rsi_14w             0.1023 #####
+  week_of_year              0.0990 ####
+  day_of_year               0.0966 ####
+  price_roc_4w              0.0952 ####
+  year                      0.0904 ####
+  is_peak_season            0.0897 ####
+  month                     0.0866 ####
+  current_price             0.0000 
+
+[OK] Model saved to E:\MLCollege\real data\ml\benchmark_model.joblib
+[OK] Features saved to E:\MLCollege\real data\ml\benchmark_features.joblib

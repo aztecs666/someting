@@ -1,0 +1,88 @@
+Project refinement record
+Date: 2026-03-17
+Project path: E:\MLCollege\real data
+Working guidance used: skills\senior-data-scientist\SKILL.md
+
+What I analyzed
+- Reviewed the project-local senior data scientist skill guidance.
+- Inspected the real-data planner flow across app, data, ml, pipeline, and audit modules.
+- Ran the main validation commands:
+  - python scripts\real_data_audit.py
+  - python scripts\train_route_forecaster.py
+  - python scripts\forecast_routes.py
+  - python scripts\evaluate_route_forecaster.py
+  - python pipeline\real_data_pipeline.py
+  - python -m compileall E:\MLCollege\real data
+
+Main findings
+- The route planner forecast table was accumulating duplicate rows for the same forecast window when the model was retrained and forecasts were regenerated on the same forecast date.
+- The observable predictor path was silently skipping predictions because the required artifacts xgb_models.joblib and xgb_features.joblib are not present in ml\.
+- The core planner path itself is operational:
+  - training completed successfully from external benchmark history
+  - forecasting completed successfully
+  - evaluation completed successfully
+  - pipeline completed successfully
+
+Refinements made
+1. Forecast persistence cleanup
+- File updated: app\forecast_support.py
+- Changed route forecast persistence so each forecast_date replaces the previous stored window set for that date.
+- This prevents stacking multiple model versions into the same planner output table.
+
+2. Database-level duplicate protection
+- File updated: data\real_data_fetcher.py
+- Added automatic deduplication for route_forecasts during database initialization.
+- Added a unique SQLite index on:
+  forecast_date, departure_window_start, departure_window_end, route_name, origin_port, destination_port, container_type
+- This blocks future duplicate forecast windows at the database level.
+
+3. Observable predictor readiness reporting
+- File updated: app\real_time_predictor.py
+- Added explicit readiness status and messages for the observable predictor.
+- The predictor now reports when artifacts are missing instead of failing silently.
+
+4. Pipeline status reporting
+- File updated: pipeline\real_data_pipeline.py
+- The pipeline now prints observable predictor status every run.
+- Current status is explicit:
+  Observable predictor skipped: missing xgb_models.joblib, xgb_features.joblib in ml/.
+
+5. Audit reporting improvements
+- File updated: utils\real_data_audit.py
+- Added observable predictor readiness output.
+- Added duplicate forecast window summary output.
+- Verified result after changes:
+  Duplicate forecast windows: 0
+
+Validation results after refinement
+- Compile check passed.
+- Audit check passed.
+- Re-running the pipeline on the same date kept duplicate forecast windows at 0.
+- Observable predictor status is now visible and accurate.
+- Planner forecasts still generate successfully after the database uniqueness change.
+
+Research and next work needed
+1. Observable predictor artifact build path
+- Research how xgb_models.joblib and xgb_features.joblib are supposed to be trained and exported.
+- If this legacy observable predictor is still required, add a documented training/export command for those artifacts.
+- If it is no longer required, remove or clearly deprecate that pipeline stage.
+
+2. Route forecast consumer contract
+- Decide whether route_forecasts should always represent only the latest run for a forecast_date, or whether historical per-model-version forecast snapshots should be stored in a separate table.
+- Right now the table is acting as the latest operational output, which matches the cleanup applied.
+
+3. Forecast quality by lane
+- Evaluation shows some lanes remain materially weaker than others, especially:
+  - Far East to North Europe
+  - Far East to South America East Coast
+  - Far East to US West Coast
+- Research lane-specific feature improvements, regime segmentation, or route-specific calibration.
+
+4. Weather horizon handling
+- 17-20 day forecasts still rely on horizon-gap penalties because the free weather source is limited.
+- Research whether a better public marine/weather source can support the full forecast horizon more directly.
+
+Summary
+- The project is now cleaner and more reliable.
+- Duplicate planner forecast rows are removed and prevented.
+- The silent missing-artifact problem in the observable predictor is now explicit in both the pipeline and audit output.
