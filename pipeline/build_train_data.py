@@ -9,12 +9,14 @@ FIXES APPLIED:
 - Added synthetic data detection warning
 """
 
-import sqlite3
-import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 import os
 import sys
+import sqlite3
+import warnings
+from datetime import timedelta
+
+import numpy as np
+import pandas as pd
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
@@ -42,8 +44,8 @@ def _check_synthetic_data(conn):
                 stacklevel=3,
             )
             return True
-    except Exception:
-        pass
+    except (pd.errors.DatabaseError, sqlite3.DatabaseError, KeyError):
+        return False
     return False
 
 

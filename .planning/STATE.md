@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** The planner must produce defensible, clearly-labeled forecasts from the repo's real data sources without failing on obvious runtime issues.
-**Current focus:** Phase 1: Restore GSD State
+**Current focus:** Phase 2: Fix Runtime Breakages
 
 ## Current Position
 
-Phase: 1 of 4 (Restore GSD State)
-Plan: 1 of 2 in current phase
+Phase: 2 of 4 (Fix Runtime Breakages)
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-03-26 — Restored missing GSD core files and started execution-backed issue audit
+Last activity: 2026-03-26 — Completed the runtime audit and fixed the synthetic-data warning path in the training dataset builder
 
-Progress: [==        ] 20%
+Progress: [===       ] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -27,7 +27,8 @@ Progress: [==        ] 20%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1 | 0 | 0 | N/A |
+| 1 | 2 | N/A | N/A |
+| 2 | 1 | N/A | N/A |
 
 **Recent Trend:**
 - Last 5 plans: none yet
@@ -41,21 +42,20 @@ Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
 - Phase 1: Restore missing `.planning` core files before continuing code repairs
-- Phase 1: Prioritize execution-backed runtime defects over speculative cleanup
+- Phase 2: Verify defect fixes against both normal and edge-case execution paths
 
 ### Pending Todos
 
-- Complete Plan 01-02 by recording the initial defect queue and committing the planning baseline
-- Resume import and smoke validation after the planning baseline is committed
+- Commit the first runtime repair with its verification evidence
+- Continue Phase 2 by fixing the next confirmed defect from the audit queue
 
 ### Blockers/Concerns
 
-- `AGENTS.md` requires `.planning/STATE.md`, `PROJECT.md`, `ROADMAP.md`, and `REQUIREMENTS.md`; they were missing at session start
-- `pipeline/build_train_data.py` calls `warnings.warn(...)` without importing `warnings`
+- `ml/model_health_check.py` still carries a duplicated `import sys`
 - No automated tests exist, so each repair needs manual verification
 
 ## Session Continuity
 
 Last session: 2026-03-26 14:00
-Stopped at: Initial repository audit interrupted while moving from code inspection to runtime validation
+Stopped at: Runtime audit completed; next step is committing the dataset-builder warning-path fix and moving to the next defect
 Resume file: None
