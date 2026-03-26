@@ -1096,7 +1096,6 @@ def train_forecaster_bundle(training_df):
 
     train_df, test_df = time_split(training_df)
 
-    X_test = test_df[CATEGORICAL_FEATURES + NUMERIC_FEATURES]
     y_test = test_df["target_cost_usd"].astype(float)
 
     residual_params = {

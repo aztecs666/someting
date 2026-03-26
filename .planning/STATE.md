@@ -12,14 +12,14 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 Phase: 2 of 4 (Fix Runtime Breakages)
 Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-03-26 — Removed tracked/generated root dump artifacts from the repo and ignored future dump outputs
+Last activity: 2026-03-26 — Cleaned duplicate/dead variables in the health-check and forecaster training paths
 
-Progress: [====      ] 40%
+Progress: [=====     ] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -28,7 +28,7 @@ Progress: [====      ] 40%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 2 | N/A | N/A |
-| 2 | 2 | N/A | N/A |
+| 2 | 3 | N/A | N/A |
 
 **Recent Trend:**
 - Last 5 plans: none yet
@@ -46,17 +46,17 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Continue Phase 2 by fixing the next confirmed defect from the audit queue
-- Decide whether to clean up the duplicate import in `ml/model_health_check.py` as the next small repair
+- Decide whether Phase 2 is complete enough to move to data/forecast integrity concerns
+- Identify the highest-value remaining issue that is not mixed with the user's unrelated local script edits
 
 ### Blockers/Concerns
 
-- `ml/model_health_check.py` still carries a duplicated `import sys`
 - The repo still has unrelated user-side modifications under `scripts/` and `skills/`; avoid mixing them into repair commits
+- No documented build/export command exists yet for the optional observable predictor artifacts
 - No automated tests exist, so each repair needs manual verification
 
 ## Session Continuity
 
 Last session: 2026-03-26 14:00
-Stopped at: Generated-file cleanup is ready for verification and commit; next likely defect is the duplicated import in `ml/model_health_check.py`
+Stopped at: Phase 2 cleanup patch is ready to commit; next step is choosing whether to advance into Phase 3 integrity work
 Resume file: None
