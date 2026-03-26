@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** The planner must produce defensible, clearly-labeled forecasts from the repo's real data sources without failing on obvious runtime issues.
-**Current focus:** Phase 2: Fix Runtime Breakages
+**Current focus:** Phase 3: Correct Data And Forecast Integrity Issues
 
 ## Current Position
 
-Phase: 2 of 4 (Fix Runtime Breakages)
-Plan: 2 of 3 in current phase
+Phase: 3 of 4 (Correct Data And Forecast Integrity Issues)
+Plan: 1 of 2 in current phase
 Status: In progress
-Last activity: 2026-03-26 — Cleaned duplicate/dead variables in the health-check and forecaster training paths
+Last activity: 2026-03-26 — Documented the observable predictor artifact requirement so pipeline behavior is explicit
 
-Progress: [=====     ] 50%
+Progress: [======    ] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
+- Total plans completed: 6
 - Average duration: N/A
 - Total execution time: N/A
 
@@ -29,6 +29,7 @@ Progress: [=====     ] 50%
 |-------|-------|-------|----------|
 | 1 | 2 | N/A | N/A |
 | 2 | 3 | N/A | N/A |
+| 3 | 1 | N/A | N/A |
 
 **Recent Trend:**
 - Last 5 plans: none yet
@@ -46,8 +47,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-- Decide whether Phase 2 is complete enough to move to data/forecast integrity concerns
-- Identify the highest-value remaining issue that is not mixed with the user's unrelated local script edits
+- Identify the next highest-value Phase 3 integrity issue that can be fixed without colliding with unrelated local edits
+- Decide whether to document or implement anything further for the optional observable predictor path
 
 ### Blockers/Concerns
 
@@ -58,5 +59,5 @@ Recent decisions affecting current work:
 ## Session Continuity
 
 Last session: 2026-03-26 14:00
-Stopped at: Phase 2 cleanup patch is ready to commit; next step is choosing whether to advance into Phase 3 integrity work
+Stopped at: Observable predictor limitation is now documented in the main README; next step is choosing the next Phase 3 issue
 Resume file: None

@@ -100,6 +100,22 @@ Run the observable snapshot pipeline:
 python pipeline/real_data_pipeline.py
 ```
 
+## Observable predictor status
+
+The observable snapshot pipeline has two distinct stages:
+
+- observation fetch and storage from public APIs
+- optional legacy XGBoost snapshot prediction over those observations
+
+The second stage requires these artifacts in `ml/`:
+
+- `xgb_models.joblib`
+- `xgb_features.joblib`
+
+If those files are absent, `python pipeline/real_data_pipeline.py` still fetches observations and can still run the route forecaster, but it will explicitly report that the observable predictor was skipped. This is the current expected behavior in this repository.
+
+There is not yet a documented training/export command for those legacy observable predictor artifacts, so treat that stage as optional until such a command is added.
+
 ## Training modes
 
 `quote_history`
