@@ -3,12 +3,14 @@ __pycache__/
 
 logs/
 ml/*.joblib
+ml/*.json
 ml/route_forecaster_metrics.json
+ml/route_forecaster_runtime_manifest.json
 app/*.joblib
 app/*.csv
 app/route_forecaster_metrics.json
 
 data/*.db
-real data/*.db
-all_programs.txt
-temp_output.txt
+notepad/
+skills/
+compare_db*.py
