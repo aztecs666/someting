@@ -1621,82 +1621,87 @@ def persist_route_forecasts(forecast_df, bundle, db_path=DB_PATH):
         return 0
 
     conn = connect(db_path)
-    cursor = conn.cursor()
-    forecast_date = str(forecast_df["forecast_date"].iloc[0])
-    cursor.execute(
-        f"DELETE FROM {ROUTE_FORECASTS_TABLE} WHERE forecast_date = ?",
-        (forecast_date,),
-    )
-
-    rows = []
-    for row in forecast_df.itertuples(index=False):
-        rows.append(
-            (
-                row.forecast_date,
-                row.departure_window_start,
-                row.departure_window_end,
-                row.route_name,
-                row.origin_port,
-                row.destination_port,
-                row.container_type,
-                bundle["model_name"],
-                bundle["model_version"],
-                float(row.market_baseline_cost),
-                float(row.expected_base_cost),
-                float(row.expected_low_cost),
-                float(row.expected_high_cost),
-                float(row.weather_cost_uplift),
-                float(row.expected_delay_days),
-                float(row.severe_weather_probability),
-                float(row.confidence_score),
-                float(row.data_coverage_pct),
-                int(row.rank_by_cost),
-                int(row.rank_by_risk),
-                json.dumps(
-                    {col: row._asdict().get(col) for col in FUTURE_WEATHER_COLUMNS},
-                    default=str,
-                ),
-                json.dumps(
-                    {
-                        col: row._asdict().get(col)
-                        for col in CATEGORICAL_FEATURES + NUMERIC_FEATURES
-                    },
-                    default=str,
-                ),
+    try:
+        cursor = conn.cursor()
+        forecast_date = str(forecast_df["forecast_date"].iloc[0])
+        rows = []
+        for row in forecast_df.itertuples(index=False):
+            rows.append(
+                (
+                    row.forecast_date,
+                    row.departure_window_start,
+                    row.departure_window_end,
+                    row.route_name,
+                    row.origin_port,
+                    row.destination_port,
+                    row.container_type,
+                    bundle["model_name"],
+                    bundle["model_version"],
+                    float(row.market_baseline_cost),
+                    float(row.expected_base_cost),
+                    float(row.expected_low_cost),
+                    float(row.expected_high_cost),
+                    float(row.weather_cost_uplift),
+                    float(row.expected_delay_days),
+                    float(row.severe_weather_probability),
+                    float(row.confidence_score),
+                    float(row.data_coverage_pct),
+                    int(row.rank_by_cost),
+                    int(row.rank_by_risk),
+                    json.dumps(
+                        {col: row._asdict().get(col) for col in FUTURE_WEATHER_COLUMNS},
+                        default=str,
+                    ),
+                    json.dumps(
+                        {
+                            col: row._asdict().get(col)
+                            for col in CATEGORICAL_FEATURES + NUMERIC_FEATURES
+                        },
+                        default=str,
+                    ),
+                )
             )
-        )
 
-    cursor.executemany(
-        f"""
-        INSERT INTO {ROUTE_FORECASTS_TABLE} (
-            forecast_date,
-            departure_window_start,
-            departure_window_end,
-            route_name,
-            origin_port,
-            destination_port,
-            container_type,
-            model_name,
-            model_version,
-            market_baseline_cost,
-            expected_base_cost,
-            expected_low_cost,
-            expected_high_cost,
-            weather_cost_uplift,
-            expected_delay_days,
-            severe_weather_probability,
-            confidence_score,
-            data_coverage_pct,
-            rank_by_cost,
-            rank_by_risk,
-            weather_summary_json,
-            feature_snapshot_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        rows,
-    )
-    conn.commit()
-    conn.close()
+        conn.execute("BEGIN")
+        cursor.execute(
+            f"DELETE FROM {ROUTE_FORECASTS_TABLE} WHERE forecast_date = ?",
+            (forecast_date,),
+        )
+        cursor.executemany(
+            f"""
+            INSERT INTO {ROUTE_FORECASTS_TABLE} (
+                forecast_date,
+                departure_window_start,
+                departure_window_end,
+                route_name,
+                origin_port,
+                destination_port,
+                container_type,
+                model_name,
+                model_version,
+                market_baseline_cost,
+                expected_base_cost,
+                expected_low_cost,
+                expected_high_cost,
+                weather_cost_uplift,
+                expected_delay_days,
+                severe_weather_probability,
+                confidence_score,
+                data_coverage_pct,
+                rank_by_cost,
+                rank_by_risk,
+                weather_summary_json,
+                feature_snapshot_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     return len(rows)
 
 
