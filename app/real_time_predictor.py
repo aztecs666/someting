@@ -27,6 +27,7 @@ MODEL_BUNDLE_PATH = os.path.join(MODEL_DIR, "xgb_models.joblib")
 FEATURE_ORDER_PATH = os.path.join(MODEL_DIR, "xgb_features.joblib")
 TRAINING_PROFILE_FILE = os.path.join(PROJECT_ROOT, "ml", "training_reference_profile.json")
 PREDICTIONS_TABLE = "route_predictions"
+BUILD_COMMAND = "python scripts/build_observable_artifacts.py"
 
 TARGET_TO_OUTPUT = {
     "total_supply_chain_cost": "predicted_shipping_price",
@@ -63,9 +64,10 @@ class RealTimePredictor:
             self.models = {}
             self.feature_order = []
             self._readiness_message = (
-                "Observable predictor skipped: missing "
+                "Observable predictor disabled: missing "
                 + ", ".join(missing_artifacts)
-                + " in ml/."
+                + " in ml/. This stage is retired until a reproducible builder is available. "
+                + f"See {BUILD_COMMAND}."
             )
             return
 
@@ -76,18 +78,19 @@ class RealTimePredictor:
             self.models = {}
             self.feature_order = []
             self._readiness_message = (
-                f"Observable predictor skipped: failed to load artifacts ({exc})."
+                f"Observable predictor disabled: failed to load artifacts ({exc}). "
+                f"Rebuild support is currently retired; see {BUILD_COMMAND}."
             )
             return
 
         if not self.models:
             self._readiness_message = (
-                "Observable predictor skipped: loaded model bundle is empty."
+                f"Observable predictor disabled: loaded model bundle is empty. See {BUILD_COMMAND}."
             )
             return
         if not self.feature_order:
             self._readiness_message = (
-                "Observable predictor skipped: loaded feature order is empty."
+                f"Observable predictor disabled: loaded feature order is empty. See {BUILD_COMMAND}."
             )
             return
 

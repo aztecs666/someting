@@ -4,7 +4,7 @@ Observable real-data pipeline.
 Flow:
 1. Fetch monitored route observations from public APIs
 2. Store only observed fields plus transparent derived values
-3. Run the legacy observable snapshot predictor
+3. Optionally run the retired legacy observable snapshot predictor when old artifacts exist
 4. Run the 14-20 day route planning forecaster when a trained bundle exists
 """
 
@@ -38,6 +38,11 @@ class RealDataPipeline:
                 )
             else:
                 predictor_status = "Observable predictor ran but returned no rows."
+        else:
+            predictor_status = (
+                self.predictor.readiness_message()
+                + " The supported workflow is observation fetch plus route forecaster execution."
+            )
         forecast_status = "Route forecaster not trained yet."
         if os.path.exists(ARTIFACT_PATH):
             run_route_forecasts()
