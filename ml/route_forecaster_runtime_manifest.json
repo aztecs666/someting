@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-04-03T08:06:17Z",
+  "generated_at_utc": "2026-04-03T12:16:37Z",
   "python_version": "3.13.3",
   "platform": "Windows-11-10.0.26200-SP0",
   "executable": "C:\\Users\\parth\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
@@ -19,7 +19,7 @@
   },
   "metadata": {
     "model_name": "route_planning_forecaster",
-    "model_version": "20260403080617",
+    "model_version": "20260403121637",
     "training_provenance": {
       "quote_history_rows": 0,
       "market_rate_history_rows": 17780,
