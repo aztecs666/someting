@@ -49,6 +49,17 @@ def _check_synthetic_data(conn):
     return False
 
 
+def _unsupported_lane_pairs(df, distances):
+    lane_cols = ["lane_name", "origin_port", "destination_port", "container_type"]
+    unsupported = []
+    for row in df[lane_cols].drop_duplicates().itertuples(index=False):
+        if (row.origin_port, row.destination_port) not in distances:
+            unsupported.append(
+                f"{row.lane_name} ({row.origin_port} -> {row.destination_port}, {row.container_type})"
+            )
+    return unsupported
+
+
 def build_training_dataset(forecast_horizons=[14, 21]):
     """
     Build training samples:
@@ -89,10 +100,17 @@ def build_training_dataset(forecast_horizons=[14, 21]):
         ("Busan", "Los Angeles"): 5600,
         ("Hong Kong", "Los Angeles"): 5800,
     }
+    unsupported_lanes = _unsupported_lane_pairs(df, distances)
+    if unsupported_lanes:
+        raise ValueError(
+            "Unsupported benchmark lanes missing nautical-mile mappings: "
+            + "; ".join(unsupported_lanes[:5])
+            + ". Add explicit distances before training."
+        )
 
     df["distance_nm"] = df.apply(
         lambda r: distances.get(
-            (r["origin_port"], r["destination_port"]), 5000
+            (r["origin_port"], r["destination_port"])
         ),
         axis=1,
     )

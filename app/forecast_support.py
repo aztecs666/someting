@@ -306,6 +306,44 @@ def _distance_nm(origin_port, destination_port):
     return nm_distance
 
 
+def _unsupported_lane_summary(frame):
+    if frame is None or frame.empty:
+        return []
+
+    lane_cols = ["route_name", "origin_port", "destination_port", "container_type"]
+    available_cols = [col for col in lane_cols if col in frame.columns]
+    if len(available_cols) < 3 or "distance_nm" not in frame.columns:
+        return []
+
+    invalid = frame.loc[
+        pd.to_numeric(frame["distance_nm"], errors="coerce").isna(),
+        available_cols,
+    ]
+    if invalid.empty:
+        return []
+
+    invalid = invalid.drop_duplicates().fillna("UNKNOWN")
+    summaries = []
+    for row in invalid.itertuples(index=False):
+        row_map = dict(zip(available_cols, row))
+        summaries.append(
+            f"{row_map.get('route_name', 'UNKNOWN')} "
+            f"({row_map.get('origin_port', 'UNKNOWN')} -> {row_map.get('destination_port', 'UNKNOWN')}, "
+            f"{row_map.get('container_type', 'UNKNOWN')})"
+        )
+    return summaries
+
+
+def _raise_if_unsupported_lanes(frame, context_label):
+    unsupported = _unsupported_lane_summary(frame)
+    if unsupported:
+        joined = "; ".join(unsupported[:5])
+        raise ValueError(
+            f"Unsupported lane distance mapping detected in {context_label}: {joined}. "
+            "Add explicit port coverage before training or forecasting this lane."
+        )
+
+
 def _normalize_dataframe_columns(df):
     df = df.copy()
     df.columns = [str(col).strip() for col in df.columns]
@@ -865,6 +903,7 @@ def _build_quote_training_rows(quotes, market_history):
             lambda row: _distance_nm(row["origin_port"], row["destination_port"]),
             axis=1,
         )
+        _raise_if_unsupported_lanes(engineered, "quote-backed training rows")
         engineered["training_data_mode"] = TRAINING_MODE_QUOTE
         engineered["training_data_source"] = engineered["source"].fillna(
             TRAINING_MODE_QUOTE
@@ -923,6 +962,7 @@ def _build_external_training_rows(external_history, training_mode):
             lambda row: _distance_nm(row["origin_port"], row["destination_port"]),
             axis=1,
         )
+        _raise_if_unsupported_lanes(engineered, "benchmark-backed training rows")
         engineered["latest_observed_benchmark_cost"] = engineered["lag_1d_cost"].fillna(
             engineered["benchmark_cost_usd"]
         )
@@ -1449,6 +1489,7 @@ def build_future_forecast_features(day_start=14, day_end=20, db_path=DB_PATH):
     if training_df.empty:
         return training_df
 
+    _raise_if_unsupported_lanes(training_df, "future forecast feature generation")
     latest_rows = _latest_combo_rows(training_df)
     weather_builder = ForecastWeatherBuilder()
     forecast_rows = []
@@ -1465,6 +1506,21 @@ def build_future_forecast_features(day_start=14, day_end=20, db_path=DB_PATH):
 
         latest_history = history.iloc[-1].to_dict()
         latest_feature_date = pd.to_datetime(latest_history["feature_date"]).date()
+        latest_distance = pd.to_numeric(pd.Series([latest_history.get("distance_nm")]), errors="coerce").iloc[0]
+        if pd.isna(latest_distance):
+            raise ValueError(
+                f"Unsupported forecast lane: {row.route_name} ({row.origin_port} -> "
+                f"{row.destination_port}, {row.container_type}) has no nautical-mile mapping."
+            )
+        latest_baseline_cost = pd.to_numeric(
+            pd.Series([latest_history.get("latest_observed_benchmark_cost")]),
+            errors="coerce",
+        ).iloc[0]
+        if pd.isna(latest_baseline_cost):
+            raise ValueError(
+                f"Unsupported forecast lane: {row.route_name} ({row.container_type}) is missing "
+                "benchmark history coverage for forecast generation."
+            )
         benchmark_staleness = latest_history.get("data_staleness_days", 0.0)
         if pd.isna(benchmark_staleness):
             benchmark_staleness = 0.0
@@ -1485,7 +1541,7 @@ def build_future_forecast_features(day_start=14, day_end=20, db_path=DB_PATH):
                 "origin_port": row.origin_port,
                 "destination_port": row.destination_port,
                 "container_type": row.container_type,
-                "distance_nm": float(latest_history.get("distance_nm", row.distance_nm)),
+                "distance_nm": float(latest_distance),
                 "lead_time_days": float(offset),
                 "feature_month": float(today.month),
                 "feature_quarter": float((today.month - 1) // 3 + 1),
