@@ -95,10 +95,18 @@ def _safe_nan_reduce(values, reducer):
 class RealDataFetcher:
     """Fetch observable route snapshots for a monitored lane watchlist."""
 
-    def __init__(self, db_path=DB_PATH):
+    def __init__(
+        self,
+        db_path=DB_PATH,
+        initialize=True,
+        seed_reference_data=True,
+        allow_maintenance=True,
+    ):
         self.db_path = db_path
-        self._init_database()
-        self._seed_reference_data()
+        if initialize:
+            self._init_database(allow_maintenance=allow_maintenance)
+        if seed_reference_data:
+            self._seed_reference_data()
 
     def _connect(self):
         return sqlite3.connect(self.db_path)
@@ -223,7 +231,7 @@ class RealDataFetcher:
             """
         )
 
-    def _init_database(self):
+    def _init_database(self, allow_maintenance=True):
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         conn = self._connect()
         cursor = conn.cursor()
@@ -485,8 +493,9 @@ class RealDataFetcher:
             """
         )
 
-        self._migrate_external_benchmark_table(cursor)
-        self._deduplicate_route_forecasts(cursor)
+        if allow_maintenance:
+            self._migrate_external_benchmark_table(cursor)
+            self._deduplicate_route_forecasts(cursor)
         self._ensure_route_forecast_unique_index(cursor)
 
         cursor.execute(

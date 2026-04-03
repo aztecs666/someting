@@ -199,6 +199,40 @@ def _baseline_cost_series(frame):
     return baseline.ffill().bfill()
 
 
+def _safe_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _primary_training_mode(training_modes):
+    training_modes = [str(mode) for mode in training_modes if str(mode).strip()]
+    if TRAINING_MODE_QUOTE in training_modes:
+        return TRAINING_MODE_QUOTE
+    if training_modes:
+        return training_modes[0]
+    return "unknown"
+
+
+def describe_training_provenance(provenance):
+    if not provenance:
+        return "Training provenance unavailable."
+
+    primary_mode = provenance.get("primary_training_mode", "unknown")
+    quote_rows = _safe_int(provenance.get("quote_history_rows"))
+    market_rows = _safe_int(provenance.get("market_rate_history_rows"))
+    label = (
+        "Benchmark-backed market forecaster"
+        if provenance.get("is_benchmark_only")
+        else "Quote-backed forecaster"
+    )
+    return (
+        f"{label} | primary mode: {primary_mode} | "
+        f"quote_history rows: {quote_rows} | market_rate_history rows: {market_rows}"
+    )
+
+
 def _route_interval_key(route_name, container_type):
     return f"{str(route_name)}||{str(container_type)}"
 
@@ -270,6 +304,44 @@ def _distance_nm(origin_port, destination_port):
     _DISTANCE_CACHE[cache_key] = nm_distance
     _DISTANCE_CACHE[(destination_port, origin_port)] = nm_distance
     return nm_distance
+
+
+def _unsupported_lane_summary(frame):
+    if frame is None or frame.empty:
+        return []
+
+    lane_cols = ["route_name", "origin_port", "destination_port", "container_type"]
+    available_cols = [col for col in lane_cols if col in frame.columns]
+    if len(available_cols) < 3 or "distance_nm" not in frame.columns:
+        return []
+
+    invalid = frame.loc[
+        pd.to_numeric(frame["distance_nm"], errors="coerce").isna(),
+        available_cols,
+    ]
+    if invalid.empty:
+        return []
+
+    invalid = invalid.drop_duplicates().fillna("UNKNOWN")
+    summaries = []
+    for row in invalid.itertuples(index=False):
+        row_map = dict(zip(available_cols, row))
+        summaries.append(
+            f"{row_map.get('route_name', 'UNKNOWN')} "
+            f"({row_map.get('origin_port', 'UNKNOWN')} -> {row_map.get('destination_port', 'UNKNOWN')}, "
+            f"{row_map.get('container_type', 'UNKNOWN')})"
+        )
+    return summaries
+
+
+def _raise_if_unsupported_lanes(frame, context_label):
+    unsupported = _unsupported_lane_summary(frame)
+    if unsupported:
+        joined = "; ".join(unsupported[:5])
+        raise ValueError(
+            f"Unsupported lane distance mapping detected in {context_label}: {joined}. "
+            "Add explicit port coverage before training or forecasting this lane."
+        )
 
 
 def _normalize_dataframe_columns(df):
@@ -831,6 +903,7 @@ def _build_quote_training_rows(quotes, market_history):
             lambda row: _distance_nm(row["origin_port"], row["destination_port"]),
             axis=1,
         )
+        _raise_if_unsupported_lanes(engineered, "quote-backed training rows")
         engineered["training_data_mode"] = TRAINING_MODE_QUOTE
         engineered["training_data_source"] = engineered["source"].fillna(
             TRAINING_MODE_QUOTE
@@ -889,6 +962,7 @@ def _build_external_training_rows(external_history, training_mode):
             lambda row: _distance_nm(row["origin_port"], row["destination_port"]),
             axis=1,
         )
+        _raise_if_unsupported_lanes(engineered, "benchmark-backed training rows")
         engineered["latest_observed_benchmark_cost"] = engineered["lag_1d_cost"].fillna(
             engineered["benchmark_cost_usd"]
         )
@@ -921,6 +995,20 @@ def build_training_dataset(db_path=DB_PATH):
 
     training_df = pd.concat(training_rows, ignore_index=True)
     training_df = training_df.loc[:, ~training_df.columns.duplicated()]
+    training_modes = (
+        sorted(training_df["training_data_mode"].dropna().astype(str).unique().tolist())
+        if "training_data_mode" in training_df.columns
+        else []
+    )
+    provenance = {
+        "quote_history_rows": int(len(quotes)),
+        "market_rate_history_rows": int(len(market_history)),
+        "training_data_modes": training_modes,
+        "primary_training_mode": _primary_training_mode(training_modes),
+        "is_benchmark_only": bool(training_modes) and TRAINING_MODE_QUOTE not in training_modes,
+    }
+    provenance["summary"] = describe_training_provenance(provenance)
+    training_df.attrs["training_provenance"] = provenance
     ordered_cols = [
         "feature_date",
         "departure_window_start",
@@ -934,9 +1022,11 @@ def build_training_dataset(db_path=DB_PATH):
         "training_data_mode",
         "training_data_source",
     ] + NUMERIC_FEATURES
-    return training_df[ordered_cols].sort_values(
+    result = training_df[ordered_cols].sort_values(
         ["feature_date", "route_name", "departure_window_start"]
     )
+    result.attrs["training_provenance"] = provenance
+    return result
 
 
 def build_preprocessor():
@@ -1093,6 +1183,16 @@ def train_forecaster_bundle(training_df):
         if "training_data_source" in training_df.columns
         else []
     )
+    provenance = dict(training_df.attrs.get("training_provenance") or {})
+    provenance.setdefault("training_data_modes", training_modes)
+    provenance.setdefault("primary_training_mode", _primary_training_mode(training_modes))
+    provenance.setdefault(
+        "is_benchmark_only",
+        bool(training_modes) and TRAINING_MODE_QUOTE not in training_modes,
+    )
+    provenance.setdefault("quote_history_rows", 0)
+    provenance.setdefault("market_rate_history_rows", 0)
+    provenance["summary"] = describe_training_provenance(provenance)
 
     train_df, test_df = time_split(training_df)
 
@@ -1121,6 +1221,7 @@ def train_forecaster_bundle(training_df):
         "source_provider": ", ".join(training_sources[:3]) if training_sources else "unknown",
         "training_data_modes": training_modes,
         "training_data_sources": training_sources,
+        "training_provenance": provenance,
         "categorical_features": CATEGORICAL_FEATURES,
         "numeric_features": NUMERIC_FEATURES,
         "prediction_strategy": "residual_blend",
@@ -1187,6 +1288,7 @@ def train_forecaster_bundle(training_df):
         "testing_start_date": str(pd.to_datetime(test_df["feature_date"]).min().date()),
         "training_data_modes": training_modes,
         "training_data_sources": training_sources,
+        "training_provenance": provenance,
     }
     bundle["metrics"] = metrics
     return bundle, metrics
@@ -1387,6 +1489,7 @@ def build_future_forecast_features(day_start=14, day_end=20, db_path=DB_PATH):
     if training_df.empty:
         return training_df
 
+    _raise_if_unsupported_lanes(training_df, "future forecast feature generation")
     latest_rows = _latest_combo_rows(training_df)
     weather_builder = ForecastWeatherBuilder()
     forecast_rows = []
@@ -1403,6 +1506,21 @@ def build_future_forecast_features(day_start=14, day_end=20, db_path=DB_PATH):
 
         latest_history = history.iloc[-1].to_dict()
         latest_feature_date = pd.to_datetime(latest_history["feature_date"]).date()
+        latest_distance = pd.to_numeric(pd.Series([latest_history.get("distance_nm")]), errors="coerce").iloc[0]
+        if pd.isna(latest_distance):
+            raise ValueError(
+                f"Unsupported forecast lane: {row.route_name} ({row.origin_port} -> "
+                f"{row.destination_port}, {row.container_type}) has no nautical-mile mapping."
+            )
+        latest_baseline_cost = pd.to_numeric(
+            pd.Series([latest_history.get("latest_observed_benchmark_cost")]),
+            errors="coerce",
+        ).iloc[0]
+        if pd.isna(latest_baseline_cost):
+            raise ValueError(
+                f"Unsupported forecast lane: {row.route_name} ({row.container_type}) is missing "
+                "benchmark history coverage for forecast generation."
+            )
         benchmark_staleness = latest_history.get("data_staleness_days", 0.0)
         if pd.isna(benchmark_staleness):
             benchmark_staleness = 0.0
@@ -1423,7 +1541,7 @@ def build_future_forecast_features(day_start=14, day_end=20, db_path=DB_PATH):
                 "origin_port": row.origin_port,
                 "destination_port": row.destination_port,
                 "container_type": row.container_type,
-                "distance_nm": float(latest_history.get("distance_nm", row.distance_nm)),
+                "distance_nm": float(latest_distance),
                 "lead_time_days": float(offset),
                 "feature_month": float(today.month),
                 "feature_quarter": float((today.month - 1) // 3 + 1),
@@ -1559,82 +1677,87 @@ def persist_route_forecasts(forecast_df, bundle, db_path=DB_PATH):
         return 0
 
     conn = connect(db_path)
-    cursor = conn.cursor()
-    forecast_date = str(forecast_df["forecast_date"].iloc[0])
-    cursor.execute(
-        f"DELETE FROM {ROUTE_FORECASTS_TABLE} WHERE forecast_date = ?",
-        (forecast_date,),
-    )
-
-    rows = []
-    for row in forecast_df.itertuples(index=False):
-        rows.append(
-            (
-                row.forecast_date,
-                row.departure_window_start,
-                row.departure_window_end,
-                row.route_name,
-                row.origin_port,
-                row.destination_port,
-                row.container_type,
-                bundle["model_name"],
-                bundle["model_version"],
-                float(row.market_baseline_cost),
-                float(row.expected_base_cost),
-                float(row.expected_low_cost),
-                float(row.expected_high_cost),
-                float(row.weather_cost_uplift),
-                float(row.expected_delay_days),
-                float(row.severe_weather_probability),
-                float(row.confidence_score),
-                float(row.data_coverage_pct),
-                int(row.rank_by_cost),
-                int(row.rank_by_risk),
-                json.dumps(
-                    {col: row._asdict().get(col) for col in FUTURE_WEATHER_COLUMNS},
-                    default=str,
-                ),
-                json.dumps(
-                    {
-                        col: row._asdict().get(col)
-                        for col in CATEGORICAL_FEATURES + NUMERIC_FEATURES
-                    },
-                    default=str,
-                ),
+    try:
+        cursor = conn.cursor()
+        forecast_date = str(forecast_df["forecast_date"].iloc[0])
+        rows = []
+        for row in forecast_df.itertuples(index=False):
+            rows.append(
+                (
+                    row.forecast_date,
+                    row.departure_window_start,
+                    row.departure_window_end,
+                    row.route_name,
+                    row.origin_port,
+                    row.destination_port,
+                    row.container_type,
+                    bundle["model_name"],
+                    bundle["model_version"],
+                    float(row.market_baseline_cost),
+                    float(row.expected_base_cost),
+                    float(row.expected_low_cost),
+                    float(row.expected_high_cost),
+                    float(row.weather_cost_uplift),
+                    float(row.expected_delay_days),
+                    float(row.severe_weather_probability),
+                    float(row.confidence_score),
+                    float(row.data_coverage_pct),
+                    int(row.rank_by_cost),
+                    int(row.rank_by_risk),
+                    json.dumps(
+                        {col: row._asdict().get(col) for col in FUTURE_WEATHER_COLUMNS},
+                        default=str,
+                    ),
+                    json.dumps(
+                        {
+                            col: row._asdict().get(col)
+                            for col in CATEGORICAL_FEATURES + NUMERIC_FEATURES
+                        },
+                        default=str,
+                    ),
+                )
             )
-        )
 
-    cursor.executemany(
-        f"""
-        INSERT INTO {ROUTE_FORECASTS_TABLE} (
-            forecast_date,
-            departure_window_start,
-            departure_window_end,
-            route_name,
-            origin_port,
-            destination_port,
-            container_type,
-            model_name,
-            model_version,
-            market_baseline_cost,
-            expected_base_cost,
-            expected_low_cost,
-            expected_high_cost,
-            weather_cost_uplift,
-            expected_delay_days,
-            severe_weather_probability,
-            confidence_score,
-            data_coverage_pct,
-            rank_by_cost,
-            rank_by_risk,
-            weather_summary_json,
-            feature_snapshot_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        """,
-        rows,
-    )
-    conn.commit()
-    conn.close()
+        conn.execute("BEGIN")
+        cursor.execute(
+            f"DELETE FROM {ROUTE_FORECASTS_TABLE} WHERE forecast_date = ?",
+            (forecast_date,),
+        )
+        cursor.executemany(
+            f"""
+            INSERT INTO {ROUTE_FORECASTS_TABLE} (
+                forecast_date,
+                departure_window_start,
+                departure_window_end,
+                route_name,
+                origin_port,
+                destination_port,
+                container_type,
+                model_name,
+                model_version,
+                market_baseline_cost,
+                expected_base_cost,
+                expected_low_cost,
+                expected_high_cost,
+                weather_cost_uplift,
+                expected_delay_days,
+                severe_weather_probability,
+                confidence_score,
+                data_coverage_pct,
+                rank_by_cost,
+                rank_by_risk,
+                weather_summary_json,
+                feature_snapshot_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
     return len(rows)
 
 

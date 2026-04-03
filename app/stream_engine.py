@@ -531,6 +531,13 @@ class StreamEngine:
 
     def retrain_model(self, trigger="manual"):
         """Retrain the XGBoost model from accumulated data."""
+        if self._retrain_lock.locked():
+            return {
+                "status": "busy",
+                "error": "Retrain already in progress.",
+                "trigger": trigger,
+            }
+
         with self._retrain_lock:
             from pipeline.build_train_data import prepare_training_data
             from sklearn.metrics import mean_absolute_error, r2_score
@@ -545,7 +552,11 @@ class StreamEngine:
 
             X, y, df = prepare_training_data()
             if X is None or len(X) == 0:
-                return None
+                return {
+                    "status": "failed",
+                    "error": "No benchmark training data available for retraining.",
+                    "trigger": trigger,
+                }
 
             X_train, X_test, y_train, y_test = _temporal_split(X, y, df, test_ratio=0.2)
 
@@ -580,6 +591,7 @@ class StreamEngine:
             conn.close()
 
             result = {
+                "status": "ok",
                 "type": "retrain",
                 "timestamp": now,
                 "train_samples": len(X_train),

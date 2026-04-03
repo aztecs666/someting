@@ -18,7 +18,6 @@ from data.real_data_fetcher import (
     OBSERVED_TABLE,
     PREDICTIONS_TABLE,
     QUOTE_HISTORY_TABLE,
-    RealDataFetcher,
     ROUTE_FORECASTS_TABLE,
 )
 from app.forecast_support import ARTIFACT_PATH
@@ -157,7 +156,10 @@ def drift_summary(profile, predictor):
 
 
 def main():
-    RealDataFetcher(DB_PATH)
+    if not os.path.exists(DB_PATH):
+        print(f"[FAIL] Database not found: {DB_PATH}")
+        return
+
     predictor = RealTimePredictor()
     profile = load_profile()
     joined = latest_joined()
