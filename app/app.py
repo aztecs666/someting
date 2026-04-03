@@ -124,8 +124,8 @@ DASHBOARD_HTML = r"""
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROUTE COST FORECASTER // LIVE</title>
-    <meta name="description" content="Legacy sandbox UI for the benchmark model">
+    <title>BENCHMARK ROUTE FORECASTER // LIVE</title>
+    <meta name="description" content="Legacy sandbox UI for the benchmark-backed model">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -684,8 +684,8 @@ DASHBOARD_HTML = r"""
 
         <div class="header">
             <div>
-                <div class="brand">ROUTE COST <strong>FORECASTER</strong></div>
-                <div class="brand-sub">Legacy Sandbox UI &middot; Not Part Of Real-Data Planner Training</div>
+                <div class="brand">BENCHMARK ROUTE <strong>FORECASTER</strong></div>
+                <div class="brand-sub">Legacy Sandbox UI &middot; Benchmark-Backed, Not Commercial Quote Training</div>
             </div>
             <div class="header-controls">
                 <div class="terminal-status" style="margin-right:12px">
@@ -796,7 +796,7 @@ DASHBOARD_HTML = r"""
 
         <div class="footer-disclaimer">
             <strong>LEGACY SANDBOX UI</strong> &mdash; This page is kept only for interface testing around the old benchmark model.
-            It is not part of the real-data planner workflow. For portfolio use, present the planner trained on `quote_history` or `market_rate_history`, not this sandbox stream.
+            It reflects benchmark-backed market behavior, not commercial shipper quote history. For portfolio use, label benchmark-only forecasts clearly and do not present this sandbox stream as quote-backed pricing.
         </div>
     </div>
 </div>

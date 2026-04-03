@@ -199,6 +199,40 @@ def _baseline_cost_series(frame):
     return baseline.ffill().bfill()
 
 
+def _safe_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _primary_training_mode(training_modes):
+    training_modes = [str(mode) for mode in training_modes if str(mode).strip()]
+    if TRAINING_MODE_QUOTE in training_modes:
+        return TRAINING_MODE_QUOTE
+    if training_modes:
+        return training_modes[0]
+    return "unknown"
+
+
+def describe_training_provenance(provenance):
+    if not provenance:
+        return "Training provenance unavailable."
+
+    primary_mode = provenance.get("primary_training_mode", "unknown")
+    quote_rows = _safe_int(provenance.get("quote_history_rows"))
+    market_rows = _safe_int(provenance.get("market_rate_history_rows"))
+    label = (
+        "Benchmark-backed market forecaster"
+        if provenance.get("is_benchmark_only")
+        else "Quote-backed forecaster"
+    )
+    return (
+        f"{label} | primary mode: {primary_mode} | "
+        f"quote_history rows: {quote_rows} | market_rate_history rows: {market_rows}"
+    )
+
+
 def _route_interval_key(route_name, container_type):
     return f"{str(route_name)}||{str(container_type)}"
 
@@ -921,6 +955,20 @@ def build_training_dataset(db_path=DB_PATH):
 
     training_df = pd.concat(training_rows, ignore_index=True)
     training_df = training_df.loc[:, ~training_df.columns.duplicated()]
+    training_modes = (
+        sorted(training_df["training_data_mode"].dropna().astype(str).unique().tolist())
+        if "training_data_mode" in training_df.columns
+        else []
+    )
+    provenance = {
+        "quote_history_rows": int(len(quotes)),
+        "market_rate_history_rows": int(len(market_history)),
+        "training_data_modes": training_modes,
+        "primary_training_mode": _primary_training_mode(training_modes),
+        "is_benchmark_only": bool(training_modes) and TRAINING_MODE_QUOTE not in training_modes,
+    }
+    provenance["summary"] = describe_training_provenance(provenance)
+    training_df.attrs["training_provenance"] = provenance
     ordered_cols = [
         "feature_date",
         "departure_window_start",
@@ -934,9 +982,11 @@ def build_training_dataset(db_path=DB_PATH):
         "training_data_mode",
         "training_data_source",
     ] + NUMERIC_FEATURES
-    return training_df[ordered_cols].sort_values(
+    result = training_df[ordered_cols].sort_values(
         ["feature_date", "route_name", "departure_window_start"]
     )
+    result.attrs["training_provenance"] = provenance
+    return result
 
 
 def build_preprocessor():
@@ -1093,6 +1143,16 @@ def train_forecaster_bundle(training_df):
         if "training_data_source" in training_df.columns
         else []
     )
+    provenance = dict(training_df.attrs.get("training_provenance") or {})
+    provenance.setdefault("training_data_modes", training_modes)
+    provenance.setdefault("primary_training_mode", _primary_training_mode(training_modes))
+    provenance.setdefault(
+        "is_benchmark_only",
+        bool(training_modes) and TRAINING_MODE_QUOTE not in training_modes,
+    )
+    provenance.setdefault("quote_history_rows", 0)
+    provenance.setdefault("market_rate_history_rows", 0)
+    provenance["summary"] = describe_training_provenance(provenance)
 
     train_df, test_df = time_split(training_df)
 
@@ -1121,6 +1181,7 @@ def train_forecaster_bundle(training_df):
         "source_provider": ", ".join(training_sources[:3]) if training_sources else "unknown",
         "training_data_modes": training_modes,
         "training_data_sources": training_sources,
+        "training_provenance": provenance,
         "categorical_features": CATEGORICAL_FEATURES,
         "numeric_features": NUMERIC_FEATURES,
         "prediction_strategy": "residual_blend",
@@ -1187,6 +1248,7 @@ def train_forecaster_bundle(training_df):
         "testing_start_date": str(pd.to_datetime(test_df["feature_date"]).min().date()),
         "training_data_modes": training_modes,
         "training_data_sources": training_sources,
+        "training_provenance": provenance,
     }
     bundle["metrics"] = metrics
     return bundle, metrics

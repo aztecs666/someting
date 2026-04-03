@@ -9,6 +9,7 @@ from app.forecast_support import (
     METRICS_PATH,
     TRAINING_DATASET_PATH,
     build_training_dataset,
+    describe_training_provenance,
     save_forecaster_bundle,
     train_forecaster_bundle,
 )
@@ -37,6 +38,13 @@ def main():
         print(f"Training modes: {', '.join(bundle['training_data_modes'])}")
     if bundle.get("training_data_sources"):
         print(f"Training sources: {', '.join(bundle['training_data_sources'][:5])}")
+    provenance = bundle.get("training_provenance", {})
+    print(f"Training provenance: {describe_training_provenance(provenance)}")
+    if provenance.get("is_benchmark_only"):
+        print(
+            "[!] Commercial quote_history rows were not used in this training run. "
+            "This artifact is benchmark-backed, not shipper-quote-backed."
+        )
     for key, value in metrics.items():
         print(f"  {key}: {value}")
 

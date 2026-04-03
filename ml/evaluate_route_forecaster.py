@@ -16,6 +16,7 @@ from app.forecast_support import (
     DB_PATH,
     ROUTE_FORECASTS_TABLE,
     build_training_dataset,
+    describe_training_provenance,
     load_forecaster_bundle,
     load_market_rate_history,
     predict_forecaster_bundle,
@@ -268,6 +269,13 @@ def main():
     print(f"Model version: {bundle['model_version']}")
     print(f"Training modes: {', '.join(bundle.get('training_data_modes', [])) or 'unknown'}")
     print(f"Training sources: {', '.join(bundle.get('training_data_sources', [])) or 'unknown'}")
+    provenance = bundle.get("training_provenance", {})
+    print(f"Training provenance: {describe_training_provenance(provenance)}")
+    if provenance.get("is_benchmark_only"):
+        print(
+            "Commercial quote history support: none in this artifact. "
+            "Evaluation reflects public market benchmark behavior."
+        )
     print(f"Latest market history date: {latest_history_date or 'none'}")
     print(f"Holdout rows: {metrics['test_rows']}")
     print(f"Model MAE: {metrics['mae']}")
