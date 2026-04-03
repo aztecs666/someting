@@ -28,6 +28,9 @@ from app.stream_engine import engine, subscribe, unsubscribe
 DB_PATH = os.path.join(PROJECT_ROOT, "data", "shipments.db")
 MODEL_PATH = os.path.join(PROJECT_ROOT, "ml", "benchmark_model.joblib")
 FEATURES_PATH = os.path.join(PROJECT_ROOT, "ml", "benchmark_features.joblib")
+DEFAULT_HOST = os.environ.get("ROUTE_FORECASTER_HOST", "127.0.0.1")
+DEFAULT_PORT = int(os.environ.get("ROUTE_FORECASTER_PORT", "5001"))
+RETRAIN_TOKEN = os.environ.get("ROUTE_FORECASTER_RETRAIN_TOKEN", "").strip()
 
 app = Flask(__name__)
 
@@ -36,6 +39,30 @@ def _connect():
     conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.execute("PRAGMA journal_mode=WAL")
     return conn
+
+
+def _is_local_request():
+    remote_addr = request.remote_addr or ""
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    forwarded_host = forwarded_for.split(",")[0].strip() if forwarded_for else ""
+    local_addrs = {"127.0.0.1", "::1", "localhost"}
+    return remote_addr in local_addrs and (not forwarded_host or forwarded_host in local_addrs)
+
+
+def _authorize_retrain_request():
+    if RETRAIN_TOKEN:
+        provided = request.headers.get("X-Retrain-Token", "").strip()
+        if provided == RETRAIN_TOKEN:
+            return True, ""
+        return False, "Retrain blocked. Provide a valid X-Retrain-Token header."
+
+    if _is_local_request():
+        return True, ""
+
+    return (
+        False,
+        "Retrain blocked. Local requests only unless ROUTE_FORECASTER_RETRAIN_TOKEN is configured.",
+    )
 
 
 # ─── API Endpoints ──────────────────────────────────────────────
@@ -84,10 +111,18 @@ def api_retrain_log():
 
 @app.route("/api/retrain", methods=["POST"])
 def api_retrain():
+    authorized, message = _authorize_retrain_request()
+    if not authorized:
+        return jsonify({"status": "forbidden", "error": message}), 403
+
     result = engine.retrain_model(trigger="manual")
-    if result:
+    if result and result.get("status") == "ok":
         return jsonify(result)
-    return jsonify({"error": "Retrain failed — no training data"}), 500
+    if result and result.get("status") == "busy":
+        return jsonify(result), 409
+    if result:
+        return jsonify(result), 500
+    return jsonify({"status": "failed", "error": "Retrain failed unexpectedly."}), 500
 
 
 @app.route("/stream")
@@ -1041,7 +1076,7 @@ async function triggerRetrain() {
     try {
         const res = await fetch('/api/retrain', { method: 'POST' });
         const data = await res.json();
-        if (data.error) {
+        if (!res.ok || data.error) {
             addLog(`<span class="log-err">[RETRAIN FAILED] ${data.error}</span>`, 'highlight');
         }
     } catch(e) {
@@ -1066,5 +1101,5 @@ def dashboard():
 
 if __name__ == "__main__":
     engine.start()
-    print("[OK] Route Cost Forecaster LIVE at http://localhost:5001")
-    app.run(host="0.0.0.0", port=5001, debug=False, threaded=True)
+    print(f"[OK] Route Cost Forecaster LIVE at http://{DEFAULT_HOST}:{DEFAULT_PORT}")
+    app.run(host=DEFAULT_HOST, port=DEFAULT_PORT, debug=False, threaded=True)
