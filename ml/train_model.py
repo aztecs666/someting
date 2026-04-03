@@ -21,10 +21,12 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import xgboost as xgb
 
 from pipeline.build_train_data import prepare_training_data, get_features
+from ml.training_runtime_manifest import write_training_runtime_manifest
 
 MODEL_DIR = os.path.dirname(__file__)
 MODEL_PATH = os.path.join(MODEL_DIR, "benchmark_model.joblib")
 FEATURES_PATH = os.path.join(MODEL_DIR, "benchmark_features.joblib")
+MANIFEST_PATH = os.path.join(MODEL_DIR, "benchmark_model_runtime_manifest.json")
 
 
 def _temporal_split(X, y, df, test_ratio=0.2):
@@ -183,8 +185,21 @@ def train_model():
     # ── Save ─────────────────────────────────────────────────────
     joblib.dump(model, MODEL_PATH)
     joblib.dump(features, FEATURES_PATH)
+    write_training_runtime_manifest(
+        MANIFEST_PATH,
+        artifact_paths={
+            "benchmark_model": MODEL_PATH,
+            "benchmark_features": FEATURES_PATH,
+        },
+        extra_metadata={
+            "model_name": "benchmark_forecasting_model",
+            "target": "price_change_pct",
+            "training_rows": int(len(X)),
+        },
+    )
     print(f"\n[OK] Model saved to {MODEL_PATH}")
     print(f"[OK] Features saved to {FEATURES_PATH}")
+    print(f"[OK] Runtime manifest saved to {MANIFEST_PATH}")
 
     return model
 
